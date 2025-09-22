@@ -22,6 +22,25 @@ const DashboardTV = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
 
+  // Conecta ao backend Socket.IO
+  useEffect(() => {
+    const newSocket = io('http://localhost:4000')
+    setSocket(newSocket)
+    return () => newSocket.close()
+  }, [])
+
+  // Recebe aviso do backend
+  useEffect(() => {
+    if (!socket) return
+    const handleNovoAviso = aviso => {
+      setAviso(aviso)
+    }
+    socket.on('novo-aviso', handleNovoAviso)
+    return () => {
+      socket.off('novo-aviso', handleNovoAviso)
+    }
+  }, [socket])
+
   // Fala aviso
   useEffect(() => {
     if (aviso[0] && aviso[3] && aviso[2]) {
