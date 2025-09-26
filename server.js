@@ -79,15 +79,53 @@ app.get('/status', (req, res) => {
     status: 'Servidor funcionando',
     timestamp: new Date(),
     environment: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 10000,
     totalAvisos: ultimosAvisos.length,
-    ultimoAviso: ultimosAvisos[0] || null
+    ultimoAviso: ultimosAvisos[0] || null,
+    uptime: process.uptime()
   })
+})
+
+// Rota de health check para o Render
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date(),
+    uptime: process.uptime()
+  })
+})
+
+// Rota raiz para verificação básica
+app.get('/', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    // Em produção, serve o React app
+    res.sendFile(path.join(__dirname, 'build', 'index.html'))
+  } else {
+    // Em desenvolvimento, mostra info da API
+    res.json({
+      message: 'API Sistema de Fila Ammarhes',
+      endpoints: {
+        status: '/status',
+        health: '/health',
+        enviarAviso: 'POST /aviso',
+        buscarAvisos: '/avisos/novos',
+        listarAvisos: '/avisos',
+        testeAviso: '/teste-aviso'
+      },
+      exemplo: {
+        url: 'POST /aviso',
+        body: {
+          aviso: [1, null, 'Consultório 1', 'João Silva']
+        }
+      }
+    })
+  }
 })
 
 // Rota para testar envio de aviso via GET (apenas para testes)
 app.get('/teste-aviso', (req, res) => {
   const avisoTeste = [1, null, 'Consultório de Teste', 'Paciente Teste']
-  
+
   const novoAviso = {
     id: ++contadorAviso,
     dados: avisoTeste,
@@ -116,16 +154,34 @@ app.get('/teste-aviso', (req, res) => {
 })
 
 // Serve o React app em produção (deve vir depois das rotas da API)
+// Captura todas as rotas que não são da API para servir o React
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'))
+    // Se não for uma rota de API, serve o React app
+    if (
+      !req.path.startsWith('/api') &&
+      !req.path.startsWith('/aviso') &&
+      !req.path.startsWith('/status') &&
+      !req.path.startsWith('/health') &&
+      !req.path.startsWith('/teste-')
+    ) {
+      res.sendFile(path.join(__dirname, 'build', 'index.html'))
+    } else {
+      res.status(404).json({ error: 'Rota não encontrada' })
+    }
   })
 }
 
-const PORT = process.env.PORT || 4000
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 10000
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${PORT}`)
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`Teste: http://localhost:${PORT}/status`)
-  console.log(`Enviar aviso: POST http://localhost:${PORT}/aviso`)
+  console.log(`Servidor vinculado ao host 0.0.0.0:${PORT}`)
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Servidor pronto para receber requisições do Render')
+  } else {
+    console.log(`Teste local: http://localhost:${PORT}/status`)
+    console.log(`Enviar aviso: POST http://localhost:${PORT}/aviso`)
+  }
 })
