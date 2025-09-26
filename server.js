@@ -78,7 +78,40 @@ app.get('/status', (req, res) => {
   res.json({
     status: 'Servidor funcionando',
     timestamp: new Date(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    totalAvisos: ultimosAvisos.length,
+    ultimoAviso: ultimosAvisos[0] || null
+  })
+})
+
+// Rota para testar envio de aviso via GET (apenas para testes)
+app.get('/teste-aviso', (req, res) => {
+  const avisoTeste = [1, null, 'Consultório de Teste', 'Paciente Teste']
+  
+  const novoAviso = {
+    id: ++contadorAviso,
+    dados: avisoTeste,
+    timestamp: new Date(),
+    processado: false
+  }
+
+  ultimosAvisos.unshift(novoAviso)
+  if (ultimosAvisos.length > 10) {
+    ultimosAvisos = ultimosAvisos.slice(0, 10)
+  }
+
+  console.log('Aviso de teste criado:', novoAviso)
+
+  res.json({
+    success: true,
+    message: 'Aviso de teste criado!',
+    aviso: novoAviso,
+    instrucoes: {
+      enviarViaPost: 'POST /aviso',
+      formatoJson: {
+        aviso: [1, null, 'Local', 'Nome do Paciente']
+      }
+    }
   })
 })
 
