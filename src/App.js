@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import io from 'socket.io-client'
+import axios from 'axios'
 import './assets/pages/DashboardTV.css'
 import logoAmmarhes from './public/img/LogoAmmarhes.png'
 import returnFilaById from './utils/returnFilaById'
@@ -21,15 +21,31 @@ const DashboardTV = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
+  const [avisosRecebidos, setAvisosRecebidos] = useState([])
 
-  // Expõe função global para receber aviso via HTTP
+  // Busca novos avisos do servidor a cada 2 segundos
   useEffect(() => {
-    window.receberAviso = novoAviso => {
-      setAviso(novoAviso)
+    const buscarAvisos = async () => {
+      try {
+        const response = await axios.get('/avisos/novos')
+        if (response.data.length > 0) {
+          const novoAviso = response.data[0] // Pega o mais recente
+          setAviso(novoAviso.dados)
+          setAvisosRecebidos(prev => [novoAviso, ...prev.slice(0, 9)]) // Mantém últimos 10
+          
+          // Marca como processado
+          await axios.post(`/avisos/${novoAviso.id}/processar`)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar avisos:', error)
+      }
     }
-    return () => {
-      delete window.receberAviso
-    }
+
+    // Busca imediatamente e depois a cada 2 segundos
+    buscarAvisos()
+    const interval = setInterval(buscarAvisos, 2000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   // Fala aviso
@@ -122,6 +138,39 @@ const DashboardTV = () => {
           {animNome} chamado para {aviso[2]}
         </div>
       )}
+
+      {/* Avisos recebidos em tempo real */}
+      {avisosRecebidos.length > 0 && (
+        <div style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '10px', 
+          margin: '10px 20px', 
+          borderRadius: '8px',
+          border: '1px solid #dee2e6'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#0e58a8' }}>
+            📢 Últimos Avisos Recebidos
+          </h4>
+          {avisosRecebidos.slice(0, 3).map((avisoItem, idx) => (
+            <div key={avisoItem.id} style={{
+              padding: '8px',
+              backgroundColor: idx === 0 ? '#d4edda' : '#ffffff',
+              border: idx === 0 ? '1px solid #c3e6cb' : '1px solid #dee2e6',
+              borderRadius: '4px',
+              marginBottom: '5px',
+              fontSize: '0.9rem'
+            }}>
+              <strong>
+                {avisoItem.dados[3]} → {avisoItem.dados[2]}
+              </strong>
+              <span style={{ float: 'right', color: '#6c757d', fontSize: '0.8rem' }}>
+                {new Date(avisoItem.timestamp).toLocaleTimeString('pt-BR')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Estatísticas */}
       <div className="estatisticas-board" style={{ marginBottom: 18 }}>
         <div className="estatistica-item aguardando">

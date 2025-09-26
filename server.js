@@ -4,6 +4,10 @@ const path = require('path')
 
 const app = express()
 
+// Armazenamento em memória para os avisos
+let ultimosAvisos = []
+let contadorAviso = 0
+
 // Middleware
 app.use(express.json())
 app.use(cors())
@@ -13,7 +17,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'build')))
 }
 
-// Rota para receber aviso
+// Rota para receber aviso via POST
 app.post('/aviso', (req, res) => {
   const { aviso } = req.body
 
@@ -21,19 +25,52 @@ app.post('/aviso', (req, res) => {
     return res.status(400).json({ error: 'Aviso deve ser um array' })
   }
 
-  const script = `
-    <script>
-      if (window.receberAviso) {
-        window.receberAviso(${JSON.stringify(aviso)});
-        document.write('Aviso enviado com sucesso!');
-      } else {
-        document.write('Frontend não encontrado ou não carregado');
-      }
-    </script>
-  `
+  // Armazena o aviso com timestamp e ID único
+  const novoAviso = {
+    id: ++contadorAviso,
+    dados: aviso,
+    timestamp: new Date(),
+    processado: false
+  }
 
-  res.setHeader('Content-Type', 'text/html')
-  res.send(script)
+  // Adiciona na lista (mantém apenas os últimos 10)
+  ultimosAvisos.unshift(novoAviso)
+  if (ultimosAvisos.length > 10) {
+    ultimosAvisos = ultimosAvisos.slice(0, 10)
+  }
+
+  console.log('Aviso recebido:', novoAviso)
+
+  res.json({
+    success: true,
+    message: 'Aviso recebido com sucesso!',
+    id: novoAviso.id,
+    timestamp: novoAviso.timestamp
+  })
+})
+
+// Rota para o frontend buscar avisos não processados
+app.get('/avisos/novos', (req, res) => {
+  const avisosNaoProcessados = ultimosAvisos.filter(aviso => !aviso.processado)
+  res.json(avisosNaoProcessados)
+})
+
+// Rota para marcar aviso como processado
+app.post('/avisos/:id/processar', (req, res) => {
+  const { id } = req.params
+  const aviso = ultimosAvisos.find(a => a.id === parseInt(id))
+
+  if (aviso) {
+    aviso.processado = true
+    res.json({ success: true, message: 'Aviso marcado como processado' })
+  } else {
+    res.status(404).json({ error: 'Aviso não encontrado' })
+  }
+})
+
+// Rota para listar todos os avisos
+app.get('/avisos', (req, res) => {
+  res.json(ultimosAvisos)
 })
 
 // Rota para testar se o servidor está funcionando
