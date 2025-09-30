@@ -19,22 +19,29 @@ const DashboardTV = () => {
   })
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
+  const [ultimoNomeChamado, setUltimoNomeChamado] = useState('')
 
-  const { fila, conectado, conectarWebSocket } = useWebSocket()
+  const { fila, conectado } = useWebSocket()
 
   useEffect(() => {
     if (fila && Array.isArray(fila) && fila.length > 0) {
-      const ultimaAtualizacao = fila[fila.length - 1]
-      if (ultimaAtualizacao && ultimaAtualizacao.nome) {
-        setAviso([Date.now(), null, 'Recepção', ultimaAtualizacao.nome])
+      const proximoPaciente = fila[0] // Primeira pessoa da fila
+
+      if (
+        proximoPaciente &&
+        proximoPaciente.nome &&
+        proximoPaciente.nome !== ultimoNomeChamado
+      ) {
+        console.log('📢 Chamando próximo paciente:', proximoPaciente.nome)
+        setAviso([Date.now(), null, 'Recepção', proximoPaciente.nome])
+        setUltimoNomeChamado(proximoPaciente.nome)
         setLastUpdate(new Date())
       }
+    } else if (fila && Array.isArray(fila) && fila.length === 0) {
+      setUltimoNomeChamado('')
+      setAviso([null, null, null, null])
     }
   }, [fila])
-
-  useEffect(() => {
-    conectarWebSocket()
-  }, [conectarWebSocket])
 
   useEffect(() => {
     if (fila && Array.isArray(fila)) {

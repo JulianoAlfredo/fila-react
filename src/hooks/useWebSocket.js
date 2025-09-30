@@ -9,6 +9,12 @@ export const useWebSocket = () => {
 
   // WebSocket real com Socket.IO
   const conectarWebSocket = () => {
+    // Evitar múltiplas conexões
+    if (socketRef.current && socketRef.current.connected) {
+      console.log('🔌 WebSocket já está conectado')
+      return
+    }
+
     console.log('🔌 Conectando WebSocket real...')
 
     // URL do servidor WebSocket
@@ -18,7 +24,8 @@ export const useWebSocket = () => {
     // Criar conexão Socket.IO
     const novoSocket = io(serverUrl, {
       transports: ['websocket', 'polling'],
-      timeout: 5000
+      timeout: 5000,
+      forceNew: true
     })
 
     // Eventos de conexão
@@ -51,6 +58,7 @@ export const useWebSocket = () => {
   const desconectarWebSocket = () => {
     console.log('🔌 Desconectando WebSocket...')
     if (socketRef.current) {
+      socketRef.current.removeAllListeners()
       socketRef.current.disconnect()
       socketRef.current = null
     }
@@ -108,7 +116,12 @@ export const useWebSocket = () => {
   useEffect(() => {
     conectarWebSocket()
     buscarFila()
-  }, [])
+
+    // Cleanup na desmontagem
+    return () => {
+      desconectarWebSocket()
+    }
+  }, []) // Array vazio para executar apenas uma vez
 
   return {
     fila,
