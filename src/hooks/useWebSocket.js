@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import io from 'socket.io-client'
 
 export const useWebSocket = () => {
-  const [avisosRecebidos, setAvisosRecebidos] = useState([])
+  const [fila, setFila] = useState([])
   const [conectado, setConectado] = useState(false)
   const [socket, setSocket] = useState(null)
   const socketRef = useRef(null)
@@ -14,8 +14,8 @@ export const useWebSocket = () => {
     // URL do servidor WebSocket
     const serverUrl =
       process.env.NODE_ENV === 'production'
-        ? window.location.origin
-        : 'http://localhost:3001'
+        ? 'https://test-connection-agenda-filaatendimento.onrender.com'
+        : 'http://localhost:3000'
 
     // Criar conexão Socket.IO
     const novoSocket = io(serverUrl, {
@@ -28,9 +28,6 @@ export const useWebSocket = () => {
       console.log('✅ WebSocket conectado:', novoSocket.id)
       setConectado(true)
       setSocket(novoSocket)
-
-      // Solicitar avisos pendentes ao conectar
-      novoSocket.emit('solicitar-avisos-pendentes')
     })
 
     novoSocket.on('disconnect', reason => {
@@ -43,19 +40,10 @@ export const useWebSocket = () => {
       setConectado(false)
     })
 
-    // Eventos de dados
-    novoSocket.on('novo-aviso', aviso => {
-      console.log('📢 Novo aviso recebido:', aviso)
-      setAvisosRecebidos(prev => [aviso, ...prev.slice(0, 9)])
-    })
-
-    novoSocket.on('avisos-pendentes', avisos => {
-      console.log('📋 Avisos pendentes:', avisos)
-      setAvisosRecebidos(avisos)
-    })
-
-    novoSocket.on('status-conexao', status => {
-      console.log('📊 Status:', status)
+    // Evento para receber atualizações da fila
+    novoSocket.on('filaAtualizada', novaFila => {
+      console.log('📋 Fila atualizada:', novaFila)
+      setFila(novaFila)
     })
 
     socketRef.current = novoSocket
@@ -71,52 +59,20 @@ export const useWebSocket = () => {
     setSocket(null)
   }
 
-  const enviarAviso = async aviso => {
-    console.log('📤 Enviando aviso:', aviso)
-
-    if (!socketRef.current || !conectado) {
-      throw new Error('WebSocket não conectado')
-    }
-
-    return new Promise((resolve, reject) => {
-      socketRef.current.emit('novo-aviso', aviso, response => {
-        if (response.success) {
-          resolve(response.aviso)
-        } else {
-          reject(new Error(response.error || 'Erro ao enviar aviso'))
-        }
-      })
-    })
-  }
-
-  const marcarProcessado = avisoId => {
-    if (socketRef.current && conectado) {
-      socketRef.current.emit('marcar-processado', avisoId)
-
-      // Atualizar estado local
-      setAvisosRecebidos(prev =>
-        prev.map(aviso =>
-          aviso.id === avisoId ? { ...aviso, processado: true } : aviso
-        )
-      )
-    }
-  }
-
-  // Função para enviar aviso via API HTTP (para integração externa)
-  const enviarAvisoViaAPI = async aviso => {
+  // Função para adicionar pessoa na fila via API HTTP
+  const adicionarNaFila = async nome => {
     const serverUrl =
       process.env.NODE_ENV === 'production'
-        ? window.location.origin
-        : 'http://localhost:3001'
+        ? 'https://test-connection-agenda-filaatendimento.onrender.com'
+        : 'http://localhost:3000'
 
     try {
-      const response = await fetch(`${serverUrl}/api/aviso`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(aviso)
-      })
+      const response = await fetch(
+        `${serverUrl}/add/${encodeURIComponent(nome)}`,
+        {
+          method: 'GET'
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status}`)
@@ -125,14 +81,38 @@ export const useWebSocket = () => {
       const result = await response.json()
       return result
     } catch (error) {
-      console.error('Erro ao enviar aviso via API:', error)
+      console.error('Erro ao adicionar na fila:', error)
       throw error
     }
   }
 
-  // Auto-conectar quando o componente montar
+  // Função para buscar fila atual via API HTTP
+  const buscarFila = async () => {
+    const serverUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://test-connection-agenda-filaatendimento.onrender.com'
+        : 'http://localhost:3000'
+
+    try {
+      const response = await fetch(`${serverUrl}/fila`)
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`)
+      }
+
+      const result = await response.json()
+      setFila(result)
+      return result
+    } catch (error) {
+      console.error('Erro ao buscar fila:', error)
+      throw error
+    }
+  }
+
+  // Auto-conectar e buscar fila inicial quando o componente montar
   useEffect(() => {
     conectarWebSocket()
+    buscarFila()
 
     // Cleanup na desmontagem
     return () => {
@@ -141,13 +121,12 @@ export const useWebSocket = () => {
   }, [])
 
   return {
-    avisosRecebidos,
+    fila,
     conectado,
     socket,
-    enviarAviso,
+    adicionarNaFila,
+    buscarFila,
     conectarWebSocket,
-    desconectarWebSocket,
-    marcarProcessado,
-    enviarAvisoViaAPI
+    desconectarWebSocket
   }
 }

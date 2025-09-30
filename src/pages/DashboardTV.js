@@ -38,7 +38,7 @@ const DashboardTV = () => {
       if (!ultimoAviso.processado) {
         setAviso(ultimoAviso.dados)
         setLastUpdate(new Date())
-        
+
         // Marcar como processado após um tempo
         setTimeout(() => {
           marcarProcessado(ultimoAviso.id)
@@ -47,13 +47,27 @@ const DashboardTV = () => {
     }
   }, [avisosRecebidos, marcarProcessado])
 
-  // Auto-conectar WebSocket ao montar componente
   useEffect(() => {
+    // Conectar ao WebSocket quando o componente montar
     conectarWebSocket()
-    return () => desconectarWebSocket()
-  }, [])
 
-  // Fala aviso
+    // Desconectar quando o componente desmontar
+    return () => {
+      desconectarWebSocket()
+    }
+  }, [conectarWebSocket, desconectarWebSocket])
+
+  // Atualizar dados quando receber atualizações via WebSocket
+  useEffect(() => {
+    if (avisosRecebidos.length > 0) {
+      const ultimoAviso = avisosRecebidos[0]
+      if (ultimoAviso.tipo === 'filaAtualizada' && ultimoAviso.dados) {
+        setFilas(ultimoAviso.dados)
+        setLastUpdate(new Date())
+      }
+    }
+  }, [avisosRecebidos])
+
   useEffect(() => {
     if (aviso[0] && aviso[3] && aviso[2]) {
       const mensagem = `${aviso[3]} chamado para ${aviso[2]}`
