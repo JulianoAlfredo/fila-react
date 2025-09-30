@@ -20,24 +20,32 @@ const DashboardTV = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
-  
+
   // Usar hook customizado para WebSocket
-  const { 
-    avisosRecebidos, 
-    conectado, 
-    enviarAviso, 
+  const {
+    avisosRecebidos,
+    conectado,
+    enviarAviso,
     conectarWebSocket,
-    desconectarWebSocket 
+    desconectarWebSocket,
+    marcarProcessado
   } = useWebSocket()
 
   // Escutar novos avisos do WebSocket
   useEffect(() => {
     if (avisosRecebidos.length > 0) {
       const ultimoAviso = avisosRecebidos[0]
-      setAviso(ultimoAviso.dados)
-      setLastUpdate(new Date())
+      if (!ultimoAviso.processado) {
+        setAviso(ultimoAviso.dados)
+        setLastUpdate(new Date())
+        
+        // Marcar como processado após um tempo
+        setTimeout(() => {
+          marcarProcessado(ultimoAviso.id)
+        }, 5000) // 5 segundos após receber
+      }
     }
-  }, [avisosRecebidos])
+  }, [avisosRecebidos, marcarProcessado])
 
   // Auto-conectar WebSocket ao montar componente
   useEffect(() => {
@@ -421,10 +429,14 @@ const DashboardTV = () => {
               }`}
               style={{ fontSize: '0.8rem', padding: '4px 8px' }}
             >
-              {conectado ? '🟢 WebSocket Conectado' : '🔴 WebSocket Desconectado'}
+              {conectado
+                ? '🟢 WebSocket Conectado'
+                : '🔴 WebSocket Desconectado'}
             </div>
             <span style={{ fontSize: '0.8rem' }}>
-              {conectado ? 'Tempo real via WebSocket' : 'Tentando reconectar...'}
+              {conectado
+                ? 'Tempo real via WebSocket'
+                : 'Tentando reconectar...'}
             </span>
             <span className="ultima-atualizacao" style={{ fontSize: '0.8rem' }}>
               Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
