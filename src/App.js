@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import io from 'socket.io-client'
 import './assets/pages/DashboardTV.css'
 import logoAmmarhes from './public/img/LogoAmmarhes.png'
 import returnFilaById from './utils/returnFilaById'
@@ -22,30 +23,57 @@ const DashboardTV = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
   const [avisosRecebidos, setAvisosRecebidos] = useState([])
+  const [conectado, setConectado] = useState(false)
 
-  // Busca novos avisos do servidor a cada 2 segundos
+  // Configurar WebSocket
   useEffect(() => {
-    const buscarAvisos = async () => {
-      try {
-        const response = await axios.get('/avisos/novos')
-        if (response.data.length > 0) {
-          const novoAviso = response.data[0] // Pega o mais recente
-          setAviso(novoAviso.dados)
-          setAvisosRecebidos(prev => [novoAviso, ...prev.slice(0, 9)]) // Mantém últimos 10
+    // Conectar ao WebSocket
+    const socketUrl = process.env.NODE_ENV === 'production' 
+      ? window.location.origin 
+      : 'http://localhost:10000'
+    
+    const novoSocket = io(socketUrl)
+    setSocket(novoSocket)
 
-          // Marca como processado
-          await axios.post(`/avisos/${novoAviso.id}/processar`)
-        }
-      } catch (error) {
-        console.error('Erro ao buscar avisos:', error)
+    // Eventos de conexão
+    novoSocket.on('connect', () => {
+      console.log('WebSocket conectado:', novoSocket.id)
+      setConectado(true)
+      setLastUpdate(new Date())
+    })
+
+    novoSocket.on('disconnect', () => {
+      console.log('WebSocket desconectado')
+      setConectado(false)
+    })
+
+    // Receber novo aviso via WebSocket
+    novoSocket.on('novo-aviso', (novoAviso) => {
+      console.log('Novo aviso recebido via WebSocket:', novoAviso)
+      setAviso(novoAviso.dados)
+      setAvisosRecebidos(prev => [novoAviso, ...prev.slice(0, 9)])
+      setLastUpdate(new Date())
+      
+      // Marcar como processado automaticamente após 3 segundos
+      setTimeout(() => {
+        novoSocket.emit('marcar-processado', novoAviso.id)
+      }, 3000)
+    })
+
+    // Receber avisos pendentes ao conectar
+    novoSocket.on('avisos-pendentes', (avisosPendentes) => {
+      console.log('Avisos pendentes recebidos:', avisosPendentes)
+      if (avisosPendentes.length > 0) {
+        const ultimoAviso = avisosPendentes[0]
+        setAviso(ultimoAviso.dados)
+        setAvisosRecebidos(avisosPendentes.slice(0, 10))
       }
+    })
+
+    // Cleanup
+    return () => {
+      novoSocket.disconnect()
     }
-
-    // Busca imediatamente e depois a cada 2 segundos
-    buscarAvisos()
-    const interval = setInterval(buscarAvisos, 2000)
-
-    return () => clearInterval(interval)
   }, [])
 
   // Fala aviso
@@ -420,14 +448,14 @@ const DashboardTV = () => {
           <div className="status-conexao">
             <div
               className={`status-indicator ${
-                socket?.connected ? 'conectado' : 'desconectado'
+                conectado ? 'conectado' : 'desconectado'
               }`}
               style={{ fontSize: '0.8rem', padding: '4px 8px' }}
             >
-              {socket?.connected ? '🟢 Conectado' : '🔴 Desconectado'}
+              {conectado ? '🟢 WebSocket Conectado' : '🔴 WebSocket Desconectado'}
             </div>
             <span style={{ fontSize: '0.8rem' }}>
-              Atualização em tempo real
+              {conectado ? 'Tempo real via WebSocket' : 'Tentando reconectar...'}
             </span>
             <span className="ultima-atualizacao" style={{ fontSize: '0.8rem' }}>
               Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
