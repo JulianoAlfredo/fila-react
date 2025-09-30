@@ -20,15 +20,11 @@ const DashboardTV = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
 
-  // Usar hook customizado para WebSocket
-  const { fila, conectado, conectarWebSocket, desconectarWebSocket } =
-    useWebSocket()
+  const { fila, conectado, conectarWebSocket } = useWebSocket()
 
-  // Escutar mudanças na fila do WebSocket
   useEffect(() => {
     if (fila && Array.isArray(fila) && fila.length > 0) {
       const ultimaAtualizacao = fila[fila.length - 1]
-      // Simular aviso baseado na fila
       if (ultimaAtualizacao && ultimaAtualizacao.nome) {
         setAviso([Date.now(), null, 'Recepção', ultimaAtualizacao.nome])
         setLastUpdate(new Date())
@@ -37,19 +33,11 @@ const DashboardTV = () => {
   }, [fila])
 
   useEffect(() => {
-    // Conectar ao WebSocket quando o componente montar
     conectarWebSocket()
+  }, [conectarWebSocket])
 
-    // Desconectar quando o componente desmontar
-    return () => {
-      desconectarWebSocket()
-    }
-  }, [conectarWebSocket, desconectarWebSocket])
-
-  // Atualizar dados quando receber atualizações via WebSocket
   useEffect(() => {
     if (fila && Array.isArray(fila)) {
-      // Atualizar filas com base nos dados recebidos
       const novasFilas = {
         recepcao: fila.slice(0, 5) || [],
         enfermagem: [],
@@ -97,13 +85,11 @@ const DashboardTV = () => {
     { key: 'medico', nome: 'Médico', cor: '#0f0e0cff' }
   ]
 
-  // Prepara dados das filas para renderização
   const pacientesPorFila = filaNomes.map(fila => ({
     ...fila,
     pacientes: filas[fila.key] || []
   }))
 
-  // Filtra pacientes em atendimento de todas as filas
   const emAtendimento = []
   Object.values(filas).forEach(fila => {
     if (Array.isArray(fila)) {
