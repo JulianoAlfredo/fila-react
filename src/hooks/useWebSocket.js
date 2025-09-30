@@ -13,9 +13,7 @@ export const useWebSocket = () => {
 
     // URL do servidor WebSocket
     const serverUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://test-connection-agenda-filaatendimento.onrender.com'
-        : 'http://localhost:3000'
+      'https://test-connection-agenda-filaatendimento.onrender.com'
 
     // Criar conexão Socket.IO
     const novoSocket = io(serverUrl, {
@@ -63,9 +61,7 @@ export const useWebSocket = () => {
   // Função para adicionar pessoa na fila via API HTTP
   const adicionarNaFila = async nome => {
     const serverUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://test-connection-agenda-filaatendimento.onrender.com'
-        : 'http://localhost:3000'
+      'https://test-connection-agenda-filaatendimento.onrender.com'
 
     try {
       const response = await fetch(
@@ -90,9 +86,7 @@ export const useWebSocket = () => {
   // Função para buscar fila atual via API HTTP
   const buscarFila = async () => {
     const serverUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://test-connection-agenda-filaatendimento.onrender.com'
-        : 'http://localhost:3000'
+      'https://test-connection-agenda-filaatendimento.onrender.com'
 
     try {
       const response = await fetch(`${serverUrl}/fila`)
