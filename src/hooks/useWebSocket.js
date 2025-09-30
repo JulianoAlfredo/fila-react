@@ -37,6 +37,7 @@ export const useWebSocket = () => {
 
     novoSocket.on('connect_error', error => {
       console.error('🚫 Erro de conexão WebSocket:', error)
+      console.error(serverUrl)
       setConectado(false)
     })
 

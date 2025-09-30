@@ -11,13 +11,12 @@ const DashboardTV = () => {
     medico: [],
     finalizacao: ['']
   })
-  const [estatisticas, setEstatisticas] = useState({
+  const [estatisticas] = useState({
     totalPacientes: 0,
     aguardando: 0,
     emAtendimento: 0,
     finalizado: 0
   })
-  const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [aviso, setAviso] = useState([null, null, null, null])
 
@@ -25,8 +24,6 @@ const DashboardTV = () => {
   const {
     fila,
     conectado,
-    adicionarNaFila,
-    buscarFila,
     conectarWebSocket,
     desconectarWebSocket
   } = useWebSocket()
@@ -462,14 +459,7 @@ const DashboardTV = () => {
         </div>
       </div>
 
-      {isLoading && (
-        <div className="loading-overlay">
-          <div className="loading-box">
-            <div className="loading-icon">⏳</div>
-            <div>Carregando painel...</div>
-          </div>
-        </div>
-      )}
+{/* Loading removido para simplificar */}
     </div>
   )
 }
