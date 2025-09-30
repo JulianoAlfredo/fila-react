@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import DashboardTV from './pages/DashboardTV'
 import ConfigPage from './pages/ConfigPage'
 import TestePage from './pages/TestePage'
+import './App.css'
 
 const App = () => {
   return (

@@ -8,8 +8,8 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: '*',
+    methods: ['GET', 'POST']
   }
 })
 
@@ -186,21 +186,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // WebSocket connection handling
-io.on('connection', (socket) => {
+io.on('connection', socket => {
   console.log('Cliente WebSocket conectado:', socket.id)
-  
+
   // Envia avisos não processados para o cliente recém-conectado
   const avisosNaoProcessados = ultimosAvisos.filter(aviso => !aviso.processado)
   if (avisosNaoProcessados.length > 0) {
     socket.emit('avisos-pendentes', avisosNaoProcessados)
   }
-  
+
   socket.on('disconnect', () => {
     console.log('Cliente WebSocket desconectado:', socket.id)
   })
-  
+
   // Permite marcar aviso como processado via WebSocket
-  socket.on('marcar-processado', (avisoId) => {
+  socket.on('marcar-processado', avisoId => {
     const aviso = ultimosAvisos.find(a => a.id === avisoId)
     if (aviso) {
       aviso.processado = true
@@ -215,7 +215,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`WebSocket habilitado`)
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`)
   console.log(`Servidor vinculado ao host 0.0.0.0:${PORT}`)
-  
+
   if (process.env.NODE_ENV === 'production') {
     console.log('Servidor pronto para receber requisições do Render')
   } else {
