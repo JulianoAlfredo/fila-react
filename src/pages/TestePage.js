@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 const TestePage = () => {
-  const { avisosRecebidos, conectado, enviarAviso, enviarAvisoViaAPI } = useWebSocket()
+  const { avisosRecebidos, conectado, enviarAviso, enviarAvisoViaAPI } =
+    useWebSocket()
   const [testeForm, setTesteForm] = useState({
     nome: 'João Silva',
     local: 'Consultório 1'
@@ -45,7 +46,7 @@ const TestePage = () => {
     const localAleatorio = locais[Math.floor(Math.random() * locais.length)]
 
     const avisoAleatorio = [Date.now(), null, localAleatorio, nomeAleatorio]
-    
+
     try {
       await enviarAviso(avisoAleatorio)
       console.log('✅ Aviso aleatório enviado!')
@@ -55,12 +56,7 @@ const TestePage = () => {
   }
 
   const testarAPI = async () => {
-    const avisoAPI = [
-      Date.now(),
-      null,
-      'API Test',
-      'Teste via HTTP API'
-    ]
+    const avisoAPI = [Date.now(), null, 'API Test', 'Teste via HTTP API']
 
     try {
       const resultado = await enviarAvisoViaAPI(avisoAPI)
