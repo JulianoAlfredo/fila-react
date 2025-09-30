@@ -108,11 +108,6 @@ export const useWebSocket = () => {
   useEffect(() => {
     conectarWebSocket()
     buscarFila()
-
-    // Cleanup na desmontagem
-    return () => {
-      desconectarWebSocket()
-    }
   }, [])
 
   return {
