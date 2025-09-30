@@ -23,29 +23,25 @@ const DashboardTV = () => {
 
   // Usar hook customizado para WebSocket
   const {
-    avisosRecebidos,
+    fila,
     conectado,
-    enviarAviso,
+    adicionarNaFila,
+    buscarFila,
     conectarWebSocket,
-    desconectarWebSocket,
-    marcarProcessado
+    desconectarWebSocket
   } = useWebSocket()
 
-  // Escutar novos avisos do WebSocket
+  // Escutar mudanças na fila do WebSocket
   useEffect(() => {
-    if (avisosRecebidos.length > 0) {
-      const ultimoAviso = avisosRecebidos[0]
-      if (!ultimoAviso.processado) {
-        setAviso(ultimoAviso.dados)
+    if (fila && Array.isArray(fila) && fila.length > 0) {
+      const ultimaAtualizacao = fila[fila.length - 1]
+      // Simular aviso baseado na fila
+      if (ultimaAtualizacao && ultimaAtualizacao.nome) {
+        setAviso([Date.now(), null, 'Recepção', ultimaAtualizacao.nome])
         setLastUpdate(new Date())
-
-        // Marcar como processado após um tempo
-        setTimeout(() => {
-          marcarProcessado(ultimoAviso.id)
-        }, 5000) // 5 segundos após receber
       }
     }
-  }, [avisosRecebidos, marcarProcessado])
+  }, [fila])
 
   useEffect(() => {
     // Conectar ao WebSocket quando o componente montar
@@ -59,14 +55,18 @@ const DashboardTV = () => {
 
   // Atualizar dados quando receber atualizações via WebSocket
   useEffect(() => {
-    if (avisosRecebidos.length > 0) {
-      const ultimoAviso = avisosRecebidos[0]
-      if (ultimoAviso.tipo === 'filaAtualizada' && ultimoAviso.dados) {
-        setFilas(ultimoAviso.dados)
-        setLastUpdate(new Date())
+    if (fila && Array.isArray(fila)) {
+      // Atualizar filas com base nos dados recebidos
+      const novasFilas = {
+        recepcao: fila.slice(0, 5) || [],
+        enfermagem: [],
+        medico: [],
+        finalizacao: []
       }
+      setFilas(novasFilas)
+      setLastUpdate(new Date())
     }
-  }, [avisosRecebidos])
+  }, [fila])
 
   useEffect(() => {
     if (aviso[0] && aviso[3] && aviso[2]) {
@@ -158,8 +158,8 @@ const DashboardTV = () => {
         </div>
       )}
 
-      {/* Avisos recebidos em tempo real */}
-      {avisosRecebidos.length > 0 && (
+      {/* Fila atual */}
+      {fila && Array.isArray(fila) && fila.length > 0 && (
         <div
           style={{
             backgroundColor: '#f8f9fa',
@@ -170,11 +170,11 @@ const DashboardTV = () => {
           }}
         >
           <h4 style={{ margin: '0 0 10px 0', color: '#0e58a8' }}>
-            📢 Últimos Avisos Recebidos
+            📢 Pessoas na Fila
           </h4>
-          {avisosRecebidos.slice(0, 3).map((avisoItem, idx) => (
+          {fila.slice(0, 3).map((pessoa, idx) => (
             <div
-              key={avisoItem.id}
+              key={pessoa.id || idx}
               style={{
                 padding: '8px',
                 backgroundColor: idx === 0 ? '#d4edda' : '#ffffff',
@@ -185,12 +185,12 @@ const DashboardTV = () => {
               }}
             >
               <strong>
-                {avisoItem.dados[3]} → {avisoItem.dados[2]}
+                {pessoa.nome || pessoa.name || `Pessoa ${idx + 1}`} → Recepção
               </strong>
               <span
                 style={{ float: 'right', color: '#6c757d', fontSize: '0.8rem' }}
               >
-                {new Date(avisoItem.timestamp).toLocaleTimeString('pt-BR')}
+                {pessoa.timestamp ? new Date(pessoa.timestamp).toLocaleTimeString('pt-BR') : 'Agora'}
               </span>
             </div>
           ))}
