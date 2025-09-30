@@ -21,12 +21,8 @@ const DashboardTV = () => {
   const [aviso, setAviso] = useState([null, null, null, null])
 
   // Usar hook customizado para WebSocket
-  const {
-    fila,
-    conectado,
-    conectarWebSocket,
-    desconectarWebSocket
-  } = useWebSocket()
+  const { fila, conectado, conectarWebSocket, desconectarWebSocket } =
+    useWebSocket()
 
   // Escutar mudanças na fila do WebSocket
   useEffect(() => {
@@ -187,7 +183,9 @@ const DashboardTV = () => {
               <span
                 style={{ float: 'right', color: '#6c757d', fontSize: '0.8rem' }}
               >
-                {pessoa.timestamp ? new Date(pessoa.timestamp).toLocaleTimeString('pt-BR') : 'Agora'}
+                {pessoa.timestamp
+                  ? new Date(pessoa.timestamp).toLocaleTimeString('pt-BR')
+                  : 'Agora'}
               </span>
             </div>
           ))}
@@ -459,7 +457,7 @@ const DashboardTV = () => {
         </div>
       </div>
 
-{/* Loading removido para simplificar */}
+      {/* Loading removido para simplificar */}
     </div>
   )
 }
